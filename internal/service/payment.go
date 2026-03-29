@@ -35,5 +35,6 @@ func (s *Service) Process(id string) error {
 		return err
 	}
 	tx.Exec("UPDATE transactions SET status='done' WHERE end_to_end_id=$1", id)
+
 	return tx.Commit()
 }
