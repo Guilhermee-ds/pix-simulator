@@ -1,53 +1,53 @@
-[🇧🇷 Português](./README.pt-BR.md) | 🇺🇸 English
+🇧🇷 Português | [🇺🇸 English](./README.en.md)
 
 # ⚡ pix-simulator
 
-> High-performance Pix payment system built in Go — capable of processing **5,000+ transactions per second** with zero errors.
+> Sistema de pagamentos Pix de alta performance construído em Go — capaz de processar **5.000+ transações por segundo** com zero falhas.
 
 ---
 
-## 📋 Table of Contents
+## 📋 Índice
 
-- [Overview](#-overview)
-- [Architecture](#-architecture)
-- [Transaction Flow](#-transaction-flow)
-- [Technologies](#-technologies)
-- [Project Structure](#-project-structure)
-- [Prerequisites](#-prerequisites)
-- [How to Run](#-how-to-run)
-- [Load Testing](#-load-testing)
+- [Visão Geral](#-visão-geral)
+- [Arquitetura](#-arquitetura)
+- [Fluxo de uma Transação](#-fluxo-de-uma-transação)
+- [Tecnologias](#-tecnologias)
+- [Estrutura do Projeto](#-estrutura-do-projeto)
+- [Pré-requisitos](#-pré-requisitos)
+- [Como Rodar](#-como-rodar)
+- [Teste de Carga](#-teste-de-carga)
 - [Performance](#-performance)
 - [API](#-api)
 
 ---
 
-## 🎯 Overview
+## 🎯 Visão Geral
 
-**pix-simulator** is an asynchronous payment system that simulates Pix transaction processing at high scale. The architecture is designed to maximize throughput and ensure financial consistency — exactly like real big tech systems.
+O **pix-simulator** é um sistema de pagamentos assíncrono que simula o processamento de transações Pix em alta escala. A arquitetura é projetada para maximizar throughput e garantir consistência financeira — exatamente como sistemas reais de big tech.
 
-**Highlights:**
-- **5,329 req/s** sustained throughput
-- **0% error rate** under intense load
-- **p(99) of 459ms** — 99% of requests responded to under 500ms
-- **1.28 million transactions** processed in 4 minutes
-- **Idempotency** guaranteed — no duplicates, even under retry
-- **ACID consistency** on financial operations
+**Destaques:**
+- **5.329 req/s** de throughput sustentado
+- **0% de taxa de erro** sob carga intensa
+- **p(99) de 459ms** — 99% das requisições respondidas abaixo de 500ms
+- **1.28 milhão de transações** processadas em 4 minutos
+- **Idempotência** garantida — sem duplicatas, mesmo sob retry
+- **Consistência ACID** nas operações financeiras
 
 ---
 
-## 🏗 Architecture
+## 🏗 Arquitetura
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        pix-simulator                            │
 │                                                                 │
 │   ┌──────────┐    ┌─────────────────┐    ┌──────────────────┐  │
-│   │  Client  │───▶│    API (Go)     │───▶│  Redis           │  │
-│   │  (k6)    │    │  :8080          │    │  • Queue (List)  │  │
-│   └──────────┘    │                 │◀───│  • Idempotency   │  │
-│                   │  • Validate req │    └────────┬─────────┘  │
+│   │  Cliente │───▶│    API (Go)     │───▶│  Redis           │  │
+│   │  (k6)    │    │  :8080          │    │  • Fila (List)   │  │
+│   └──────────┘    │                 │◀───│  • Idempotência  │  │
+│                   │  • Valida req   │    └────────┬─────────┘  │
 │                   │  • Dedup key    │             │            │
-│                   │  • Enqueue      │             │ consume    │
+│                   │  • Enfileira    │             │ consume    │
 │                   └─────────────────┘             ▼            │
 │                                        ┌──────────────────┐   │
 │                                        │  Worker (Go)     │   │
@@ -70,88 +70,88 @@
 
 ---
 
-## 🔄 Transaction Flow
+## 🔄 Fluxo de uma Transação
 
 ```
-1. Client sends POST /pix
+1. Cliente envia POST /pix
          │
          ▼
-2. API checks Idempotency-Key in Redis
-   ├── duplicate? → returns "duplicated" (200)
-   └── new? → continues
+2. API verifica Idempotency-Key no Redis
+   ├── duplicada? → retorna "duplicated" (200)
+   └── nova? → continua
          │
          ▼
-3. API generates unique txID (UUID)
+3. API gera txID único (UUID)
          │
          ▼
-4. API pushes Job to Redis queue
+4. API empurra Job na fila Redis
    { id, sender, receiver, amount }
          │
          ▼
-5. API saves Idempotency-Key in Redis (TTL: 10min)
+5. API salva Idempotency-Key no Redis (TTL: 10min)
          │
          ▼
-6. API returns "queued" instantly ⚡
+6. API retorna "queued" instantaneamente ⚡
          │
-         ▼ (async)
-7. Worker consumes Job from queue
+         ▼ (assíncrono)
+7. Worker consome Job da fila
          │
          ▼
-8. Worker opens PostgreSQL transaction
+8. Worker abre transação no PostgreSQL
    ├── INSERT transactions (status: pending)
    ├── UPDATE accounts SET balance - amount (sender)
    ├── UPDATE accounts SET balance + amount (receiver)
    └── UPDATE transactions (status: done)
          │
          ▼
-9. Transaction committed with ACID ✅
+9. Transação commitada com ACID ✅
 ```
 
 ---
 
-## 🛠 Technologies
+## 🛠 Tecnologias
 
-| Technology | Version | Usage |
+| Tecnologia | Versão | Uso |
 |---|---|---|
-| **Go** | 1.22 | API and Worker |
-| **PostgreSQL** | 15 | Persistence and financial consistency |
-| **Redis** | 7 | Message queue and idempotency |
-| **Docker** | — | Containerization |
-| **Docker Compose** | — | Local orchestration |
-| **k6** | — | Load testing |
+| **Go** | 1.22 | API e Worker |
+| **PostgreSQL** | 15 | Persistência e consistência financeira |
+| **Redis** | 7 | Fila de mensagens e idempotência |
+| **Docker** | — | Containerização |
+| **Docker Compose** | — | Orquestração local |
+| **k6** | — | Teste de carga |
 
 ---
 
-## 📁 Project Structure
+## 📁 Estrutura do Projeto
 
 ```
 pix-simulator/
 ├── cmd/
 │   ├── api/
-│   │   └── main.go          # HTTP server
+│   │   └── main.go          # Servidor HTTP
 │   └── worker/
-│       └── main.go          # Queue consumer
+│       └── main.go          # Consumidor da fila
 │
 ├── internal/
 │   ├── database/
-│   │   └── postgres.go      # PostgreSQL connection and pool
+│   │   └── postgres.go      # Conexão e pool do PostgreSQL
 │   ├── idempotency/
-│   │   └── redis.go         # Duplicate key verification
+│   │   └── redis.go         # Verificação de chaves duplicadas
 │   ├── queue/
-│   │   └── redis.go         # Push/Pop on Redis queue
+│   │   └── redis.go         # Push/Pop na fila Redis
 │   └── service/
-│       └── payment.go       # Pix processing logic
+│       └── payment.go       # Lógica de processamento do Pix
 │
 ├── docker/
-│   ├── Dockerfile.api       # API build
-│   └── Dockerfile.worker    # Worker build
+│   ├── Dockerfile.api       # Build da API
+│   └── Dockerfile.worker    # Build do Worker
 │
 ├── migrations/
 │   ├── 001_create_tables.sql
 │   └── 002_seed_accounts.sql
 │
 ├── load-test/
-│   └── test.js              # k6 script
+│   └── test.js              # Script k6
 │
 ├── docker-compose.yml
 ├── go.mod
@@ -161,37 +161,37 @@ pix-simulator/
 
 ---
 
-## ✅ Prerequisites
+## ✅ Pré-requisitos
 
 - [Docker](https://www.docker.com/) >= 24
 - [Docker Compose](https://docs.docker.com/compose/) >= 2
-- [k6](https://k6.io/docs/get-started/installation/) (for load testing)
+- [k6](https://k6.io/docs/get-started/installation/) (para testes de carga)
 
 ---
 
-## 🚀 How to Run
+## 🚀 Como Rodar
 
-### 1. Clone the repository
+### 1. Clone o repositório
 
 ```bash
-git clone https://github.com/your-username/pix-simulator.git
+git clone https://github.com/seu-usuario/pix-simulator.git
 cd pix-simulator
 ```
 
-### 2. Start the services
+### 2. Suba os serviços
 
 ```bash
 docker compose up --build
 ```
 
-This will start:
-- **PostgreSQL** on port `5432`
-- **Redis** on port `6379`
-- **Migrate** — applies migrations automatically
-- **API** on port `8080`
-- **Worker** — 200 goroutines processing the queue
+Isso irá subir:
+- **PostgreSQL** na porta `5432`
+- **Redis** na porta `6379`
+- **Migrate** — aplica as migrations automaticamente
+- **API** na porta `8080`
+- **Worker** — 200 goroutines processando a fila
 
-### 3. Verify it's running
+### 3. Verifique se está rodando
 
 ```bash
 curl -X POST http://localhost:8080/pix \
@@ -199,10 +199,10 @@ curl -X POST http://localhost:8080/pix \
   -H "Idempotency-Key: test-001" \
   -d '{"sender": "1", "receiver": "2", "amount": 10}'
 
-# Expected response: queued
+# Resposta esperada: queued
 ```
 
-### 4. Stop the services
+### 4. Parar os serviços
 
 ```bash
 docker compose down
@@ -210,7 +210,7 @@ docker compose down
 
 ---
 
-## 🔍 Inspecting Data
+## 🔍 Inspecionando os Dados
 
 ### PostgreSQL (via terminal)
 
@@ -219,13 +219,13 @@ docker exec -it docker-postgres-1 psql -U pix -d pix
 ```
 
 ```sql
--- View transactions
+-- Ver transações
 SELECT * FROM transactions ORDER BY created_at DESC LIMIT 10;
 
--- View balances
+-- Ver saldos
 SELECT * FROM accounts;
 
--- Count transactions by status
+-- Contar transações por status
 SELECT status, COUNT(*) FROM transactions GROUP BY status;
 ```
 
@@ -236,30 +236,30 @@ docker exec -it docker-redis-1 redis-cli
 ```
 
 ```bash
-KEYS *          # all keys
-DBSIZE          # total keys
-LLEN pix        # jobs remaining in queue
+KEYS *          # todas as chaves
+DBSIZE          # total de chaves
+LLEN pix        # jobs restantes na fila
 ```
 
-### Redis (via GUI)
+### Redis (via interface gráfica)
 
-Recommended: **[RedisInsight](https://redis.io/insight)** (free and official)
+Recomendado: **[RedisInsight](https://redis.io/insight)** (gratuito e oficial)
 - Host: `localhost`
-- Port: `6379`
+- Porta: `6379`
 
 ---
 
-## 🧪 Load Testing
+## 🧪 Teste de Carga
 
-### Prepare the environment
+### Preparar o ambiente
 
-Before running the test, clean up previous data:
+Antes de rodar o teste, limpe os dados anteriores:
 
 ```bash
-# Clean Redis
+# Limpar Redis
 docker exec docker-redis-1 redis-cli FLUSHALL
 
-# Clean transactions and reset balances
+# Limpar transações e resetar saldos
 docker exec docker-postgres-1 psql -U pix -d pix -c "TRUNCATE TABLE transactions;"
 docker exec docker-postgres-1 psql -U pix -d pix -c "
   UPDATE accounts SET balance = 10000 WHERE id = '1';
@@ -267,52 +267,52 @@ docker exec docker-postgres-1 psql -U pix -d pix -c "
 "
 ```
 
-Or use the ready-made script:
+Ou use o script pronto:
 
 ```bash
 chmod +x run-test.sh
 ./run-test.sh
 ```
 
-### Run the test
+### Rodar o teste
 
 ```bash
 k6 run load-test/test.js
 ```
 
-**Test stages:**
+**Cenários do teste:**
 
-| Stage | Duration | VUs | Description |
+| Estágio | Duração | VUs | Descrição |
 |---|---|---|---|
-| Warm-up | 30s | 200 | Gradual ramp-up |
-| Normal load | 1m | 1000 | Typical operation |
-| Peak | 2m | 2000 | Big tech load |
-| Cooldown | 30s | 0 | Shutdown |
+| Aquecimento | 30s | 200 | Warm-up gradual |
+| Carga normal | 1m | 1000 | Operação típica |
+| Pico | 2m | 2000 | Big tech load |
+| Cooldown | 30s | 0 | Encerramento |
 
-> **Note:** After k6 finishes, the worker may continue processing the queue for a few seconds. This is expected — the system is async. Check with `docker exec docker-redis-1 redis-cli LLEN pix` to see remaining jobs.
+> **Nota:** Após o k6 finalizar, o worker pode continuar processando a fila por alguns segundos. Isso é esperado — o sistema é assíncrono. Verifique com `docker exec docker-redis-1 redis-cli LLEN pix` para ver os jobs restantes.
 
 ---
 
 ## 📊 Performance
 
-Real results in a local environment (Docker):
+Resultado real em ambiente local (Docker):
 
 ```
-✓ 0%      error rate
-✓ 459ms   p(99) latency
-✓ 5,329   requests per second
-✓ 1.28M   transactions in 4 minutes
-✓ 104ms   median response time
-✓ 100%    checks passing
+✓ 0%      taxa de erro
+✓ 459ms   p(99) de latência
+✓ 5.329   requisições por segundo
+✓ 1.28M   transações em 4 minutos
+✓ 104ms   mediana de resposta
+✓ 100%    checks passando
 ```
 
-| Metric | pix-simulator | Real Pix (BACEN) |
+| Métrica | pix-simulator | Pix real (BACEN) |
 |---|---|---|
-| Throughput | 5,329 req/s | ~1,000 req/s |
+| Throughput | 5.329 req/s | ~1.000 req/s |
 | p(99) | 459ms | — |
-| Error rate | 0% | — |
+| Taxa de erro | 0% | — |
 
-> pix-simulator processes **~5x more** than the real Pix system in a development environment.
+> O pix-simulator processa **~5x mais** que o sistema real do Pix em ambiente de desenvolvimento.
 
 ---
 
@@ -320,14 +320,14 @@ Real results in a local environment (Docker):
 
 ### `POST /pix`
 
-Queues a Pix transaction for processing.
+Enfileira uma transação Pix para processamento.
 
 **Headers**
 
-| Header | Type | Required | Description |
+| Header | Tipo | Obrigatório | Descrição |
 |---|---|---|---|
 | `Content-Type` | string | ✅ | `application/json` |
-| `Idempotency-Key` | string | ✅ | Unique key to prevent duplicates |
+| `Idempotency-Key` | string | ✅ | Chave única para evitar duplicatas |
 
 **Body**
 
@@ -339,16 +339,16 @@ Queues a Pix transaction for processing.
 }
 ```
 
-**Responses**
+**Respostas**
 
-| Status | Body | Description |
+| Status | Body | Descrição |
 |---|---|---|
-| `200` | `queued` | Transaction successfully queued |
-| `200` | `duplicated` | Idempotency-Key already used |
-| `400` | `invalid body` | Invalid request body |
-| `500` | `queue error` | Error queuing in Redis |
+| `200` | `queued` | Transação enfileirada com sucesso |
+| `200` | `duplicated` | Idempotency-Key já utilizada |
+| `400` | `invalid body` | Corpo da requisição inválido |
+| `500` | `queue error` | Erro ao enfileirar no Redis |
 
-**Example**
+**Exemplo**
 
 ```bash
 curl -X POST http://localhost:8080/pix \
@@ -363,6 +363,6 @@ curl -X POST http://localhost:8080/pix \
 
 ---
 
-## 📄 License
+## 📄 Licença
 
 MIT © pix-simulator
