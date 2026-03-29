@@ -3,11 +3,11 @@ package main
 import (
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"pix-simulator/internal/idempotency"
 	"pix-simulator/internal/queue"
 
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -33,14 +33,24 @@ func main() {
 		}
 
 		var req Request
-		json.NewDecoder(r.Body).Decode(&req)
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "invalid body", http.StatusBadRequest)
+			return
+		}
 
-		txID := "tx_" + time.Now().Format("20060102150405")
+		txID := "tx_" + uuid.New().String()
 
-		queue.Push(rdb, "pix", queue.Job{ID: txID})
+		if err := queue.Push(rdb, "pix", queue.Job{
+			ID:       txID,
+			Sender:   req.Sender,
+			Receiver: req.Receiver,
+			Amount:   req.Amount,
+		}); err != nil {
+			http.Error(w, "queue error", http.StatusInternalServerError)
+			return
+		}
 
 		idempotency.Save(rdb, key)
-
 		w.Write([]byte("queued"))
 	})
 

@@ -1,8 +1,9 @@
 module pix-simulator
 
-go 1.25.6
+go 1.22
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.12.0
 	github.com/redis/go-redis/v9 v9.18.0
 )

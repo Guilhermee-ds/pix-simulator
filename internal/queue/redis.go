@@ -10,12 +10,18 @@ import (
 var ctx = context.Background()
 
 type Job struct {
-	ID string
+	ID       string
+	Sender   string
+	Receiver string
+	Amount   float64
 }
 
-func Push(rdb *redis.Client, key string, job Job) {
-	data, _ := json.Marshal(job)
-	rdb.LPush(ctx, key, data)
+func Push(rdb *redis.Client, key string, job Job) error {
+	data, err := json.Marshal(job)
+	if err != nil {
+		return err
+	}
+	return rdb.LPush(ctx, key, data).Err()
 }
 
 func Pop(rdb *redis.Client, key string) (Job, error) {
