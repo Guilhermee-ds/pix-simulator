@@ -363,6 +363,8 @@ curl -X POST http://localhost:8080/pix \
 
 ---
 
-## 📄 License
+🧑‍💻 Author
 
-MIT © pix-simulator
+Developed by **Guilherme Oliveira**
+
+💼 Technical demonstration project — Software Engineering / Distributed Systems
